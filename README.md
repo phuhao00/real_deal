@@ -194,6 +194,7 @@ Skills provide context-specific guidance:
 - Creating React components → `frontend-skill` activates
 - Implementing login → `auth-skill` activates
 - Setting up billing → `billing-skill` activates
+- Designing UI/UX → `product-design-skill` activates
 
 ### Using Agents
 

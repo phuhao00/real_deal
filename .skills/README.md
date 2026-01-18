@@ -303,6 +303,44 @@ Theme and skin marketplace with validation, performance requirements, and revenu
 
 ---
 
+#### [product-design-skill](.skills/product-design-skill/)
+Product design and UX/UI guidance for consistent and high-quality user experience.
+
+**Capabilities:**
+- Product positioning and target audience analysis
+- Design principles and guidelines
+- Visual design system (colors, typography, spacing)
+- Interaction patterns and component design
+- Responsive design and accessibility
+- Design system maintenance
+
+**Key Features:**
+- Design tokens (colors, typography, spacing, shadows)
+- Component patterns (buttons, cards, inputs, modals, etc.)
+- Layout patterns (feed, profile, detail pages)
+- Accessibility standards (WCAG compliance)
+- Responsive design guidelines
+- Animation and transition guidelines
+
+**Reference Documentation:**
+- [Design Tokens](.skills/product-design-skill/references/design-tokens.md)
+- [Component Patterns](.skills/product-design-skill/references/component-patterns.md)
+
+**Scripts:**
+- `check-design-system.sh` - Check design system consistency
+- `generate-design-docs.sh` - Generate design documentation
+- `export-assets.sh` - Export design assets
+
+**Use When:**
+- Designing new features
+- Creating UI components
+- Improving user interactions
+- Optimizing user experience
+- Ensuring design consistency
+- Implementing responsive design
+
+---
+
 ## Agents
 
 Agents provide automated workflows for common development tasks.
