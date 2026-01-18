@@ -29,110 +29,374 @@ Automated testing agent that generates, runs, and maintains tests for the real_d
 ## Test Types
 
 ### Backend (Go)
-- Unit tests for handlers (`internal/handlers/`)
-- Integration tests for database operations
-- API endpoint tests
-- Storage (MinIO) tests
-- Authentication flow tests
 
-### Frontend (Next.js/React)
-- Component unit tests (Jest)
-- Integration tests (React Testing Library)
-- API integration tests
-- Snapshot tests for UI components
-- Accessibility tests (jest-axe)
-
-### End-to-End (E2E)
-- User registration/login flow
-- Job posting workflow
-- Company verification process
-- Pitch page creation
-- Deal room access
-
-## Test Frameworks
-
-### Backend
+#### Handler Unit Tests
 ```go
-// Example: handler test
-func TestJobList(t *testing.T) {
-    handler := NewJob(mockDB)
+package handlers
+
+import (
+    "net/http"
+    "net/http/httptest"
+    "testing"
+    "github.com/gin-gonic/gin"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/mock"
+    "go.mongodb.org/mongo-driver/bson"
+    "go.mongodb.org/mongo-driver/mongo"
+)
+
+// Mock database for testing
+type MockDB struct {
+    mock.Mock
+}
+
+func (m *MockDB) Collection(name string) *mongo.Collection {
+    args := m.Called(name)
+    return args.Get(0).(*mongo.Collection)
+}
+
+func TestJobHandler_List(t *testing.T) {
+    // Setup
+    mockDB := new(MockDB)
+    handler := NewJob(mockDB.DB)
     w := httptest.NewRecorder()
     c, _ := gin.CreateTestContext(w)
+    c.Request = httptest.NewRequest("GET", "/api/jobs", nil)
 
+    // Execute
     handler.List(c)
 
-    assert.Equal(t, 200, w.Code)
+    // Assert
+    assert.Equal(t, http.StatusOK, w.Code)
 }
 ```
 
-### Frontend
+#### Integration Tests
+```go
+func TestJobHandler_Integration(t *testing.T) {
+    // Setup test database
+    testURI := "mongodb://localhost:27017/test_db"
+    mongo, _ := db.NewMongo(&config.Config{MongoURI: testURI, MongoDB: "test"})
+
+    // Insert test data
+    testJob := Job{ID: "test_001", Title: "Test Job"}
+    mongo.DB.Collection("jobs").InsertOne(context.Background(), testJob)
+
+    // Test
+    handler := NewJob(mongo.DB)
+    w := httptest.NewRecorder()
+    c, _ := gin.CreateTestContext(w)
+    handler.List(c)
+
+    // Assert
+    assert.Equal(t, http.StatusOK, w.Code)
+
+    // Cleanup
+    mongo.DB.Collection("jobs").DeleteMany(context.Background(), bson.M{})
+}
+```
+
+### Frontend (Next.js/React)
+
+#### Component Tests
 ```typescript
-// Example: component test
-test('displays job list', () => {
-  render(<JobList jobs={mockJobs} />)
-  expect(screen.getByText('Developer')).toBeInTheDocument()
+// components/__tests__/Card.test.tsx
+import { render, screen } from '@testing-library/react'
+import Card from '../Card'
+
+describe('Card', () => {
+  it('renders title and subtitle', () => {
+    render(<Card title="Test Title" subtitle="Test Subtitle" />)
+
+    expect(screen.getByText('Test Title')).toBeInTheDocument()
+    expect(screen.getByText('Test Subtitle')).toBeInTheDocument()
+  })
+
+  it('does not render subtitle when not provided', () => {
+    render(<Card title="Test Title" />)
+
+    expect(screen.queryByText(/subtitle/i)).not.toBeInTheDocument()
+  })
 })
 ```
 
-### E2E
+#### Page Tests
 ```typescript
-// Example: Playwright test
-test('user can login', async ({ page }) => {
-  await page.goto('/login')
-  await page.fill('email', 'test@example.com')
-  await page.click('button[type="submit"]')
-  await expect(page).toHaveURL('/dashboard')
+// app/__tests__/page.test.tsx
+import { render, screen } from '@testing-library/react'
+import Page from '../page'
+
+// Mock API client
+jest.mock('../lib/api', () => ({
+  api: jest.fn().mockResolvedValue({
+    projects: [],
+    products: [],
+    posts: [],
+    jobs: [],
+    companies: []
+  })
+}))
+
+describe('Explore Page', () => {
+  it('renders feed layout', async () => {
+    render(await Page())
+
+    expect(screen.getByText('动态')).toBeInTheDocument()
+  })
 })
+```
+
+### End-to-End Tests
+
+#### Playwright E2E Tests
+```typescript
+// e2e/explore.spec.ts
+import { test, expect } from '@playwright/test'
+
+test('explore page loads and displays content', async ({ page }) => {
+  await page.goto('http://localhost:3000')
+
+  // Check page title
+  await expect(page).toHaveTitle(/Real Deal/)
+
+  // Check feed items
+  const feedItems = await page.locator('.feed-row').count()
+  expect(feedItems).toBeGreaterThan(0)
+
+  // Check filter functionality
+  await page.fill('input[placeholder*="搜索"]', 'React')
+  await page.press('input[placeholder*="搜索"]', 'Enter')
+
+  // Check filtered results
+  const filteredItems = await page.locator('.feed-row').count()
+  expect(filteredItems).toBeGreaterThan(0)
+})
+
+test('login flow', async ({ page }) => {
+  await page.goto('http://localhost:3000/login')
+
+  await page.fill('input[name="email"]', 'test@example.com')
+  await page.click('button[type="submit"]')
+
+  // Should redirect to home
+  await expect(page).toHaveURL('http://localhost:3000')
+})
+```
+
+## Test Frameworks
+
+### Backend Testing
+```bash
+# Run all tests
+go test ./...
+
+# Run specific package
+go test ./internal/handlers
+
+# Run with coverage
+go test -cover ./...
+
+# Run with verbose output
+go test -v ./...
+
+# Run benchmarks
+go test -bench=. ./...
+```
+
+### Frontend Testing
+```bash
+cd web
+
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm test -- --watch
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Run specific test file
+npm test -- Card.test.tsx
+```
+
+### E2E Testing
+```bash
+cd web
+
+# Install Playwright (first time)
+npx playwright install
+
+# Run E2E tests
+npx playwright test
+
+# Run tests in headed mode (show browser)
+npx playwright test --headed
+
+# Run tests in UI mode
+npx playwright test --ui
 ```
 
 ## Coverage Targets
 
 ### Minimum Coverage
-- Backend: 80% line coverage
-- Frontend: 75% line coverage
-- Critical paths: 95% coverage
+- **Backend**: 80% line coverage
+- **Frontend**: 75% line coverage
+- **Critical paths**: 95% coverage
 
-### Critical Paths
+### Critical Paths to Cover
 - Authentication/authorization
-- Payment/billing flows
-- Data storage/retrieval
-- File uploads
-- Company verification
+- API endpoints
+- Data validation
+- Error handling
+- File upload/download
 
 ## Test Data Management
 
 ### Fixtures
-- `seeds/*.json` - Initial data
-- Mock MongoDB responses
-- Mock Redis cache data
-- Mock MinIO file storage
 
-### Test Database
-- Separate test database
-- Clean state before each test
-- Rollback transactions after tests
-- Isolated test environment
+#### Go Test Fixtures
+```go
+// internal/handlers/fixtures.go
+package handlers
+
+var TestJob = Job{
+    ID:       "job_test_001",
+    Title:    "Test Job",
+    Location: "Test City",
+    Level:    "Senior",
+    Salary:   "100k",
+    Skills:   []string{"Go", "MongoDB"},
+}
+
+func SeedTestJobs(db *mongo.Database) error {
+    jobs := []interface{}{TestJob}
+    _, err := db.Collection("jobs").InsertMany(context.Background(), jobs)
+    return err
+}
+```
+
+#### Frontend Test Fixtures
+```typescript
+// components/__tests__/fixtures.ts
+export const mockJobs = [
+  {
+    id: 'job_001',
+    title: 'Frontend Engineer',
+    location: 'Shanghai',
+    level: 'Senior',
+    salary: '30k-40k',
+    skills: ['React', 'TypeScript']
+  }
+]
+
+export const mockProjects = [
+  {
+    id: 'proj_001',
+    title: 'Test Project',
+    summary: 'Test summary',
+    tags: ['React', 'Next.js']
+  }
+]
+```
 
 ## Workflow
 
 ### Continuous Integration
-1. Trigger on PR
-2. Run unit tests (fast)
-3. Run integration tests (medium)
-4. Run E2E tests (slow)
-5. Generate coverage report
-6. Comment on PR with results
+```yaml
+# .github/workflows/test.yml
+name: Tests
 
-### Manual Testing
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Backend tests
+      - name: Run backend tests
+        run: |
+          go test -v -cover ./...
+          go tool cover -html=coverage.out -o coverage.html
+
+      # Frontend tests
+      - name: Run frontend tests
+        run: |
+          cd web
+          npm install
+          npm test -- --coverage
+
+      # E2E tests
+      - name: Run E2E tests
+        run: |
+          cd web
+          npx playwright test
+```
+
+### Manual Testing Commands
 ```bash
 # Backend tests
-go test ./...
+go test ./... -v -cover
 
 # Frontend tests
-npm test
+cd web && npm test
 
-# E2E tests
-npx playwright test
+# Full test suite
+bash .agents/testing-agent/scripts/run-all-tests.sh
+```
+
+## Scripts
+
+### Run All Tests
+```bash
+#!/bin/bash
+# .agents/testing-agent/scripts/run-all-tests.sh
+
+echo "Running all tests..."
+
+# Backend tests
+echo "=== Backend Tests ==="
+go test ./... -cover
+BACKEND_STATUS=$?
+
+# Frontend tests
+echo "=== Frontend Tests ==="
+cd web && npm test
+FRONTEND_STATUS=$?
+
+cd ..
+
+# Report
+if [ $BACKEND_STATUS -eq 0 ] && [ $FRONTEND_STATUS -eq 0 ]; then
+    echo "✓ All tests passed!"
+    exit 0
+else
+    echo "✗ Some tests failed"
+    exit 1
+fi
+```
+
+### Generate Coverage Report
+```bash
+#!/bin/bash
+# .agents/testing-agent/scripts/generate-coverage.sh
+
+echo "Generating coverage reports..."
+
+# Backend coverage
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out -o coverage-backend.html
+
+# Frontend coverage
+cd web
+npm test -- --coverage
+cd ..
+
+echo "Coverage reports generated!"
+echo "Backend: coverage-backend.html"
+echo "Frontend: web/coverage/"
 ```
 
 ## Integration Points
@@ -140,3 +404,4 @@ npx playwright test
 - Code coverage badges
 - Test result notifications
 - PR check status
+

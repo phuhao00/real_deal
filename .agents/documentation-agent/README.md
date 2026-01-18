@@ -36,100 +36,214 @@ Automated documentation agent that generates, updates, and maintains technical d
 ## Documentation Types
 
 ### API Documentation
+
 ```markdown
-## GET /api/jobs
+# API Endpoints Reference
 
-Lists all jobs with optional filtering.
+## Authentication
 
-### Authentication
-Required: Bearer token
+### POST /api/login
+Login with email
 
-### Query Parameters
-- `company_id` (optional): Filter by company
-- `status` (optional): Filter by status (active/closed)
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 20)
-
-### Response
+**Request:**
 ```json
 {
-  "jobs": [...],
-  "total": 100,
-  "page": 1
+  "email": "user@example.com"
 }
+```
+
+**Response:**
+```json
+{
+  "id": "user_001",
+  "name": "Alice",
+  "role": "candidate",
+  "email": "alice@example.com"
+}
+```
+
+**Cookie:** `uid` (httpOnly, 7 days)
+
+---
+
+### GET /api/jobs
+List all jobs
+
+**Query Parameters:**
+- None
+
+**Response:**
+```json
+[
+  {
+    "id": "job_001",
+    "title": "前端工程师（Next.js）",
+    "location": "上海",
+    "level": "中级",
+    "salary": "25k-35k/月",
+    "skills": ["React", "TypeScript", "SSR"]
+  }
+]
 ```
 ```
 
 ### Code Documentation
+
+#### Go Documentation
 ```go
-// ListJobs retrieves all jobs from the database.
-// It supports filtering by company and status.
-// Returns a JSON array of jobs or an error if the query fails.
+// ListJobs retrieves all jobs from the MongoDB database.
+// It returns a JSON array of job objects.
+// If the database query fails, it returns a 500 error.
+//
+// Usage:
+//
+//   handler := NewJob(db)
+//   handler.List(c)
 func (h *JobHandler) List(c *gin.Context) {
-    // Implementation
+    ctx := context.Background()
+    cur, err := h.DB.Collection("jobs").Find(ctx, bson.D{}, nil)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    var items []Job
+    for cur.Next(ctx) { var j Job; _ = cur.Decode(&j); items = append(items, j) }
+    c.JSON(http.StatusOK, items)
 }
 ```
 
+#### React/TypeScript Documentation
 ```typescript
 /**
- * JobList component displays a list of jobs with filtering options.
+ * FeedRow component displays a single feed item with title, subtitle, and tags.
  *
- * @props {Job[]} jobs - Array of jobs to display
- * @props {string} filter - Current filter applied
- * @props {(filter: string) => void} onFilterChange - Callback when filter changes
+ * @param {string} title - The main title of the feed item
+ * @param {string} [subtitle] - Optional subtitle text
+ * @param {string[]} [tags] - Optional array of tags
+ * @param {boolean} [dense=false] - Whether to use compact layout
  *
  * @example
- * <JobList jobs={jobs} filter="active" onFilterChange={setFilter} />
+ * <FeedRow
+ *   title="Project Title"
+ *   subtitle="A brief summary"
+ *   tags={['React', 'TypeScript']}
+ *   dense={false}
+ * />
  */
-export default function JobList({ jobs, filter, onFilterChange }: Props) {
-    // Implementation
+export default function FeedRow({ title, subtitle, tags, dense }: Props) {
+  return (
+    <div className={`px-4 ${dense ? 'py-2' : 'py-3'}`}>
+      {/* Component implementation */}
+    </div>
+  )
 }
 ```
 
 ### Architecture Documentation
+
 ```markdown
-## System Architecture
+# System Architecture
 
-### Components
-- **Backend**: Go/Gin API server with MongoDB + Redis
-- **Frontend**: Next.js with React and Tailwind CSS
-- **Storage**: MinIO for file storage
-- **Auth**: OAuth/OIDC with multiple providers
+## Components
 
-### Data Flow
-1. User authenticates via OAuth
-2. Frontend stores JWT in httpOnly cookie
-3. API requests include auth token
-4. Backend validates token
-5. Business logic processes request
-6. Response returned to frontend
+### Backend
+- **Language**: Go 1.23.0
+- **Framework**: Gin v1.10.1
+- **Database**: MongoDB (primary)
+- **Cache**: Redis v7
+- **Object Storage**: MinIO v7.0.60
+- **Message Queue**: NATS 2.10
+
+### Frontend
+- **Framework**: Next.js 14.2.4 (App Router)
+- **UI**: React 18.2.0
+- **Language**: TypeScript 5.3.3
+- **Styling**: Tailwind CSS 3.4.3
+
+## Data Flow
+
+```
+┌─────────────┐
+│   Browser   │
+└──────┬──────┘
+       │
+       │ HTTP Request (with cookie)
+       ↓
+┌─────────────────────┐
+│  Next.js Frontend   │
+│  (Server Component) │
+└──────┬──────────────┘
+       │
+       │ API Call
+       ↓
+┌─────────────────────┐
+│   Go Backend        │
+│   (Gin + Handler)   │
+└──────┬──────────────┘
+       │
+       ├──────────────┬──────────────┬──────────────┐
+       ↓              ↓              ↓              ↓
+   ┌─────┐      ┌─────┐      ┌─────┐      ┌─────┐
+   │Mongo │      │Redis │      │MinIO │      │ NATS │
+   └─────┘      └─────┘      └─────┘      └─────┘
+```
+
+## Database Collections
+
+- `users` - User accounts and profiles
+- `projects` - Project listings
+- `products` - Product listings
+- `posts` - Blog posts
+- `jobs` - Job listings
+- `companies` - Company profiles
+- `pitch_pages` - Pitch pages
+- `deal_rooms` - Deal rooms
+- `investors` - Investor profiles
 ```
 
 ## Documentation Tools
 
 ### Go Documentation
-- `godoc` for package documentation
-- `swag` for OpenAPI specs
-- Inline comments for code explanations
+```bash
+# Generate documentation
+godoc -http=:6060
+
+# View documentation
+# Open http://localhost:6060/pkg/real_deal/
+
+# Install godoc
+go install golang.org/x/tools/cmd/godoc@latest
+```
 
 ### Frontend Documentation
-- JSDoc for React components
-- Storybook for component documentation
-- TypeDoc for TypeScript type documentation
+```bash
+# Generate JSDoc
+npx jsdoc web/components/*.tsx
 
-### General
-- Markdown for general docs
-- Mermaid for diagrams
-- PlantUML for architecture diagrams
+# Install JSDoc
+npm install -D jsdoc
+```
+
+### API Documentation (Swagger)
+```bash
+# Install swag for Go
+go install github.com/swaggo/swag/cmd/swag@latest
+
+# Generate Swagger docs
+swag init
+
+# Run Swagger UI
+swag serve
+```
 
 ## Documentation Structure
 
 ```
 docs/
   api/                      # API documentation
-    openapi.json            # OpenAPI spec
-    endpoints.md            # Endpoint reference
+    endpoints.md            # All API endpoints
     authentication.md       # Auth flow docs
+    examples.md             # Request/response examples
   architecture/             # System architecture
     overview.md             # High-level architecture
     data-models.md          # Database schemas
@@ -137,31 +251,130 @@ docs/
   guides/                   # User guides
     getting-started.md      # Quick start
     features.md             # Feature walkthroughs
-    configuration.md        # Setup and config
+    deployment.md           # Deployment guide
   development/              # Developer docs
     setup.md                # Local development setup
     contributing.md         # Contribution guidelines
     testing.md              # Testing procedures
 ```
 
-## Auto-Generation Triggers
+## Auto-Generation Scripts
 
-### When to Generate
-- New API endpoint added → Generate API docs
+### Generate API Documentation
+```bash
+#!/bin/bash
+# .agents/documentation-agent/scripts/generate-api-docs.sh
+
+echo "Generating API documentation..."
+
+# Generate Swagger docs from Go handlers
+swag init -g cmd/server/main.go -o docs/api
+
+echo "API documentation generated in docs/api/"
+```
+
+### Generate Component Documentation
+```bash
+#!/bin/bash
+# .agents/documentation-agent/scripts/generate-component-docs.sh
+
+echo "Generating component documentation..."
+
+cd web
+
+# Generate JSDoc from React components
+npx jsdoc components/*.tsx --configure jsdoc.json --destination docs/components
+
+echo "Component documentation generated in docs/components/"
+```
+
+### Generate README
+```bash
+#!/bin/bash
+# .agents/documentation-agent/scripts/generate-readme.sh
+
+cat > README.md << 'EOF'
+# Real Deal
+
+## Description
+...
+
+## Quick Start
+...
+
+## Documentation
+- [API Documentation](docs/api/)
+- [Architecture](docs/architecture/)
+- [Development Guide](docs/development/)
+EOF
+
+echo "README.md generated!"
+```
+
+## Update Workflow
+
+### When to Update Docs
+- New API endpoint added → Update API docs
 - New component created → Generate JSDoc
-- Code refactored → Update docs
+- Code refactored → Update relevant docs
 - Schema changed → Update data models
-- New feature released → Update guides
+- New feature released → Update user guides
 
-### Update Workflow
+### Documentation Update Process
+
 1. Detect code changes
+```bash
+# Find modified files
+git diff --name-only HEAD~1 HEAD
+```
+
 2. Parse code for documentation
+```bash
+# Extract JSDoc comments
+grep -r "/\*\*" web/components/
+```
+
 3. Generate/update docs
+```bash
+bash .agents/documentation-agent/scripts/generate-api-docs.sh
+bash .agents/documentation-agent/scripts/generate-component-docs.sh
+```
+
 4. Validate links and references
+```bash
+# Check for broken links
+# (Use a link checker tool)
+```
+
 5. Commit docs with changes
+```bash
+git add docs/
+git commit -m "Update documentation"
+```
+
+## Best Practices
+
+### API Documentation
+- Include request/response examples
+- Document authentication requirements
+- Specify status codes and error responses
+- Include rate limiting information
+
+### Code Documentation
+- Keep it brief and focused
+- Explain "why", not "what"
+- Use examples for complex logic
+- Document function signatures and parameters
+
+### Architecture Documentation
+- Include diagrams where helpful
+- Explain design decisions
+- Document data flow
+- Include deployment considerations
 
 ## Integration Points
 - API docs: Integrate with Swagger UI
-- Component docs: Integrate with Storybook
+- Component docs: Integrate with Storybook (if added)
 - CI/CD: Auto-generate docs on build
 - Version control: Track docs alongside code
+
