@@ -1,0 +1,4 @@
+[
+  {"companyId": "co_001", "level": "advanced", "status": "approved"},
+  {"companyId": "co_002", "level": "basic", "status": "pending"}
+]

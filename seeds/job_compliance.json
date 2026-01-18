@@ -1,0 +1,4 @@
+[
+  {"jobId": "job_001", "status": "approved", "notes": "薪资与工时合规"},
+  {"jobId": "job_002", "status": "review", "notes": "需补充福利说明"}
+]

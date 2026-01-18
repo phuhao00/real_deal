@@ -1,0 +1,37 @@
+[
+  {
+    "id": "prod_001",
+    "name": "多媒体展示套件",
+    "summary": "照片墙/视频/作品的一体化前端组件",
+    "tags": ["UI", "Media"],
+    "media": []
+  },
+  {
+    "id": "prod_002",
+    "name": "AI 客服与文案助手",
+    "summary": "基于 RAG 的站内问答与一键文案生成",
+    "tags": ["AI", "RAG"],
+    "media": []
+  },
+  {
+    "id": "prod_003",
+    "name": "职位智能发布",
+    "summary": "结构化发布与合规预审、自动纠错",
+    "tags": ["Job", "Compliance"],
+    "media": []
+  },
+  {
+    "id": "prod_004",
+    "name": "认证与审核控制台",
+    "summary": "公司认证、职位合规与内容审核一站式",
+    "tags": ["KYB", "Moderation"],
+    "media": []
+  },
+  {
+    "id": "prod_005",
+    "name": "主题/皮肤市集",
+    "summary": "个性化空间主题与皮肤，一键安装",
+    "tags": ["Theme", "Skin"],
+    "media": []
+  }
+]

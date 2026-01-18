@@ -1,0 +1,44 @@
+[
+  {
+    "id": "proj_001",
+    "title": "AI 驱动的个人作品集",
+    "summary": "支持照片墙、视频章节与自动摘要的沉浸式作品集",
+    "tags": ["AI", "React", "Next.js"],
+    "media": []
+  },
+  {
+    "id": "proj_002",
+    "title": "公司品牌主页与案例库",
+    "summary": "统一呈现品牌故事、团队与产品案例",
+    "tags": ["Brand", "Story", "CMS"],
+    "media": []
+  },
+  {
+    "id": "proj_003",
+    "title": "招聘网站交互重设计",
+    "summary": "基于数据驱动的导航与筛选体验优化",
+    "tags": ["UX", "Analytics", "A/B"],
+    "media": []
+  },
+  {
+    "id": "proj_004",
+    "title": "多语言作品集生成器",
+    "summary": "自动生成中文/英文/日文介绍与标签",
+    "tags": ["i18n", "AI"],
+    "media": []
+  },
+  {
+    "id": "proj_005",
+    "title": "照片墙瀑布流组件",
+    "summary": "高性能响应式瀑布流布局与懒加载",
+    "tags": ["UI", "Tailwind", "Web"],
+    "media": []
+  },
+  {
+    "id": "proj_006",
+    "title": "视频章节与字幕工具",
+    "summary": "自动提取章节并生成交互式时间轴",
+    "tags": ["Video", "FFmpeg"],
+    "media": []
+  }
+]

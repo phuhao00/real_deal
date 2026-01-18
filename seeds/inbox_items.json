@@ -1,0 +1,4 @@
+[
+  {"userId": "user_001", "type": "comment", "text": "你发布的作品很棒"},
+  {"userId": "user_001", "type": "job_update", "text": "职位申请已收到"}
+]

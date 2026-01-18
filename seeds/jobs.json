@@ -1,0 +1,50 @@
+[
+  {
+    "id": "job_001",
+    "title": "前端工程师（Next.js）",
+    "location": "上海",
+    "level": "中级",
+    "salary": "25k-35k/月",
+    "skills": ["React", "TypeScript", "SSR"]
+  },
+  {
+    "id": "job_002",
+    "title": "后端工程师（Golang）",
+    "location": "北京",
+    "level": "高级",
+    "salary": "35k-45k/月",
+    "skills": ["Golang", "MongoDB", "Redis", "MQ"]
+  },
+  {
+    "id": "job_003",
+    "title": "全栈工程师（React+Go）",
+    "location": "深圳",
+    "level": "中高级",
+    "salary": "30k-40k/月",
+    "skills": ["React", "Golang", "API", "CI/CD"]
+  },
+  {
+    "id": "job_004",
+    "title": "产品设计师（交互）",
+    "location": "杭州",
+    "level": "中级",
+    "salary": "20k-30k/月",
+    "skills": ["UX", "Figma", "A/B"]
+  },
+  {
+    "id": "job_005",
+    "title": "内容审核工程师",
+    "location": "成都",
+    "level": "中级",
+    "salary": "18k-25k/月",
+    "skills": ["Moderation", "Policy", "Scripting"]
+  },
+  {
+    "id": "job_006",
+    "title": "AI 工程师（RAG）",
+    "location": "上海",
+    "level": "高级",
+    "salary": "40k-55k/月",
+    "skills": ["LLM", "Embedding", "Vector"]
+  }
+]

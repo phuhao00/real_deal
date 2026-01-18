@@ -1,0 +1,75 @@
+version: '3.9'
+services:
+  mongodb:
+    image: mongo:7
+    container_name: realdeal-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongo:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=realdeal
+
+  redis:
+    image: redis:7-alpine
+    container_name: realdeal-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  minio:
+    image: minio/minio:latest
+    container_name: realdeal-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=miniouser
+      - MINIO_ROOT_PASSWORD=miniopass123
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: realdeal-nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["-js"]
+
+  app:
+    build: .
+    container_name: realdeal-app
+    environment:
+      - SERVER_ADDR=:8080
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DB=realdeal
+      - REDIS_ADDR=redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=miniouser
+      - MINIO_SECRET_KEY=miniopass123
+      - MINIO_BUCKET=media
+    depends_on:
+      - mongodb
+      - redis
+      - minio
+      - nats
+    ports:
+      - "8080:8080"
+
+  seed:
+    build: .
+    container_name: realdeal-seed
+    command: ["/app/seed"]
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DB=realdeal
+    depends_on:
+      - mongodb
+    profiles:
+      - seed
+
+networks:
+  default:
+    name: realdeal-net

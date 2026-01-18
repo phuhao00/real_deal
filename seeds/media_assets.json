@@ -1,0 +1,16 @@
+[
+  {
+    "id": "media_img_001",
+    "type": "image",
+    "title": "示例封面",
+    "key": "samples/cover.jpg",
+    "createdAt": "2026-01-17T00:00:00Z"
+  },
+  {
+    "id": "media_vid_001",
+    "type": "video",
+    "title": "示例短视频",
+    "key": "samples/demo.mp4",
+    "createdAt": "2026-01-17T00:00:00Z"
+  }
+]

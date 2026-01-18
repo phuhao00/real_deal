@@ -1,0 +1,23 @@
+[
+  {
+    "id": "co_001",
+    "name": "未来云科技",
+    "description": "专注于 AI 与多媒体展示的产品研发",
+    "verified": true,
+    "tags": ["AI", "Media"]
+  },
+  {
+    "id": "co_002",
+    "name": "前沿设计实验室",
+    "description": "探索前卫的招聘与展示体验",
+    "verified": false,
+    "tags": ["Design", "Recruiting"]
+  },
+  {
+    "id": "co_003",
+    "name": "数智互动",
+    "description": "数据驱动的交互产品与增长工具",
+    "verified": true,
+    "tags": ["Analytics", "Growth"]
+  }
+]
