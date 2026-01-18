@@ -1,113 +1,258 @@
 "use client"
+import { useState, useEffect } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import CompanyCard from './CompanyCard'
+import JobCard from './JobCard'
 
-export default function RightSidebar({ trending, news }: { trending: any[], news: any[] }){
+type RightSidebarProps = {
+  trending?: any[]
+  news?: any[]
+  companies?: any[]
+  jobs?: any[]
+}
+
+type TabType = 'all' | 'companies' | 'jobs' | 'projects' | 'trending'
+
+export default function RightSidebar({
+  trending = [],
+  news = [],
+  companies = [],
+  jobs = []
+}: RightSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const params = useSearchParams()
-  const setParam = (key:string, val:string)=>{
-    const usp = new URLSearchParams(params.toString())
-    if(val) usp.set(key, val); else usp.delete(key)
-    router.push(`${pathname}?${usp.toString()}`)
-  }
-  const is = (p:string)=> pathname.startsWith(p)
+  const [activeTab, setActiveTab] = useState<TabType>('companies')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isScrolled, setIsScrolled] = useState(false)
 
-  const section1Title = is('/jobs') ? '岗位速报' : is('/projects') ? '合作公司' : is('/products') ? '推荐产品' : is('/investors') ? '你可能感兴趣' : is('/media') ? '媒体精选' : '今日资讯'
+  const is = (p: string) => pathname.startsWith(p)
 
-  const section2Title = is('/jobs') ? '热门技能' : is('/projects') || is('/products') ? '热门标签' : is('/investors') ? '热门轮次/区域' : is('/media') ? '类型统计' : '热门趋势'
-
-  const topTags = (items:any[], field:string)=>{
-    const map: Record<string, number> = {}
-    const list = Array.isArray(items) ? items : []
-    for(const it of list){
-      const arr = Array.isArray(it[field])
-        ? it[field]
-        : (typeof it[field] === 'string' ? String(it[field]).split(',').map((s:string)=>s.trim()).filter(Boolean) : [])
-      for(const v of arr){ map[v] = (map[v]||0)+1 }
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20)
     }
-    return Object.entries(map).sort((a,b)=> b[1]-a[1]).slice(0,5).map(([k,c])=> ({ id:k, title:k, summary:`${c} 项` }))
-  }
-  const topSkills = (items:any[])=> topTags(items,'skills')
-  const topProjectTags = (items:any[])=> topTags(items,'tags')
-  const topProductTags = (items:any[])=> topTags(items,'tags')
-  const typeStats = (items:any[])=>{
-    const map: Record<string, number> = {}
-    items.forEach(it=>{ const t = it.type || '未知'; map[t] = (map[t]||0)+1 })
-    return Object.entries(map).sort((a,b)=> b[1]-a[1]).slice(0,5).map(([k,c])=> ({ id:k, title:k, summary:`${c} 项` }))
-  }
-  const stageRegionStats = (items:any[])=>{
-    const st: Record<string, number> = {}; const rg: Record<string, number> = {}
-    const list = Array.isArray(items) ? items : []
-    for(const it of list){
-      const stages = Array.isArray(it.stages)
-        ? it.stages
-        : (typeof it.stages === 'string' ? it.stages.split(',').map((s:string)=>s.trim()).filter(Boolean) : [])
-      const regions = Array.isArray(it.regions)
-        ? it.regions
-        : (typeof it.regions === 'string' ? it.regions.split(',').map((s:string)=>s.trim()).filter(Boolean) : [])
-      for(const s of stages){ st[s]=(st[s]||0)+1 }
-      for(const r of regions){ rg[r]=(rg[r]||0)+1 }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const tabs: { id: TabType; label: string; count?: number }[] = [
+    { id: 'companies', label: '公司', count: companies.length },
+    { id: 'jobs', label: '职位', count: jobs.length },
+    { id: 'projects', label: '项目', count: trending.filter((t: any) => t.type === 'project').length },
+    { id: 'trending', label: '热门' }
+  ]
+
+  const filteredCompanies = companies.filter((c: any) =>
+    c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.industry?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const filteredJobs = jobs.filter((j: any) =>
+    j.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    j.company?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'companies':
+        return (
+          <div className="space-y-3">
+            {filteredCompanies.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 text-[13px]">
+                暂无相关公司
+              </div>
+            ) : (
+              filteredCompanies.slice(0, 5).map((company: any) => (
+                <CompanyCard
+                  key={company.id}
+                  id={company.id}
+                  name={company.name}
+                  description={company.description}
+                  logo={company.logo}
+                  verified={company.verified}
+                  location={company.location}
+                  industry={company.industry}
+                  employees={company.employees}
+                  followers={company.followers}
+                  projects={company.projects_count}
+                  jobs={company.jobs_count}
+                  tags={company.tags}
+                  coverImage={company.cover_image}
+                  website={company.website}
+                />
+              ))
+            )}
+          </div>
+        )
+
+      case 'jobs':
+        return (
+          <div className="space-y-3">
+            {filteredJobs.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 text-[13px]">
+                暂无相关职位
+              </div>
+            ) : (
+              filteredJobs.slice(0, 5).map((job: any) => (
+                <JobCard
+                  key={job.id}
+                  id={job.id}
+                  title={job.title}
+                  company={job.company}
+                  location={job.location}
+                  level={job.level}
+                  salary={job.salary}
+                  skills={job.skills}
+                  description={job.description}
+                  postedAt={job.created_at}
+                  applicants={job.applicants}
+                />
+              ))
+            )}
+          </div>
+        )
+
+      default:
+        return (
+          <div className="space-y-2">
+            {trending.slice(0, 8).map((item: any, idx: number) => (
+              <div
+                key={item.id}
+                className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition cursor-pointer group"
+              >
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600 transition">
+                  {idx + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium truncate group-hover:text-blue-600 transition">
+                    {item.title || item.name}
+                  </div>
+                  <div className="text-[11px] text-gray-500 truncate mt-0.5">
+                    {item.summary || item.description}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
     }
-    const topStages = Object.entries(st).sort((a,b)=> b[1]-a[1]).slice(0,3).map(([k,c])=> ({ id:`stage:${k}`, title:k, summary:`${c} 位投资人` }))
-    const topRegions = Object.entries(rg).sort((a,b)=> b[1]-a[1]).slice(0,2).map(([k,c])=> ({ id:`region:${k}`, title:k, summary:`${c} 位投资人` }))
-    return [...topStages, ...topRegions]
   }
-
-  const section2Data = is('/jobs') ? topSkills(trending) : is('/projects') ? topProjectTags(trending) : is('/products') ? topProductTags(trending) : is('/investors') ? stageRegionStats(trending) : is('/media') ? typeStats(trending) : trending.slice(0,5).map((t:any)=>({ id:t.id, title:t.title || t.name, summary:t.summary || t.description }))
-
-  const section1Data = is('/projects') ? news.slice(0,5).map((n:any)=> ({ id:n.id, title:n.name, summary:n.description }))
-                      : is('/products') ? trending.slice(0,5).map((p:any)=> ({ id:p.id, title:p.name, summary:p.summary }))
-                      : is('/jobs') ? trending.slice(0,5).map((j:any)=> ({ id:j.id, title:j.title, summary:`${j.location} · ${j.level}` }))
-                      : is('/investors') ? trending.slice(0,5).map((i:any)=> ({ id:i.id, title:i.name, summary:i.thesis }))
-                      : is('/media') ? trending.slice(0,5).map((m:any)=> ({ id:m.id, title:m.title, summary:m.type }))
-                      : news.slice(0,5).map((n:any)=> ({ id:n.id, title:n.title || n.name || n.post || n.company, summary:n.summary || n.description }))
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-[350px] gap-4 sticky top-0 h-screen overflow-y-hidden pr-1">
-      {pathname==='/' && (
-        <div className="panel border rounded-2xl p-4">
-          <div className="text-[16px] font-semibold">交互</div>
-          <div className="mt-2 flex items-center gap-2 flex-wrap">
-            <span className="text-[12px] text-neutral-500">密度</span>
-            {['comfy','compact'].map(d=> (
-              <button key={d} onClick={()=> setParam('density', d)} className={`chip text-[12px] ${params.get('density')===d?'chip-active':''}`}>{d==='comfy'?'舒适':'紧凑'}</button>
-            ))}
-            <span className="ml-3 text-[12px] text-neutral-500">类型</span>
-            {['all','projects','products','jobs'].map(t=> (
-              <button key={t} onClick={()=> setParam('type', t==='all'?'':t)} className={`chip text-[12px] ${params.get('type')===t?'chip-active':''}`}>{t==='all'?'全部': t==='projects'?'作品': t==='products'?'产品':'职位'}</button>
-            ))}
+    <aside className={`hidden lg:flex lg:flex-col lg:w-[380px] gap-3 sticky top-0 h-screen py-2 transition-all duration-200 ${isScrolled ? 'shadow-lg' : ''}`}>
+      <div className="bg-white border border-gray-200 rounded-xl p-4">
+        <div className="relative">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索公司、职位、项目..."
+            className="w-full bg-gray-50 text-[13px] border border-gray-200 rounded-full pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+          />
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="flex border-b border-gray-200 bg-gray-50">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 px-3 py-2.5 text-[13px] font-medium transition-all relative ${
+                activeTab === tab.id
+                  ? 'text-blue-600 bg-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              {tab.label}
+              {tab.count !== undefined && tab.count > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded-full">
+                  {tab.count}
+                </span>
+              )}
+              {activeTab === tab.id && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="max-h-[calc(100vh-250px)] overflow-y-auto p-3 scrollbar-thin">
+          {renderContent()}
+        </div>
+      </div>
+
+      {pathname === '/' && (
+        <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-4 text-white">
+          <div className="text-[15px] font-bold mb-2">🚀 发现更多机会</div>
+          <div className="text-[13px] opacity-90 mb-3">
+            浏览优质公司、项目、职位，找到属于你的机会
+          </div>
+          <div className="flex gap-2">
+            <a
+              href="/companies"
+              className="flex-1 bg-white text-blue-600 text-center py-2 rounded-lg text-[13px] font-medium hover:bg-blue-50 transition"
+            >
+              公司
+            </a>
+            <a
+              href="/jobs"
+              className="flex-1 bg-white text-purple-600 text-center py-2 rounded-lg text-[13px] font-medium hover:bg-purple-50 transition"
+            >
+              职位
+            </a>
           </div>
         </div>
       )}
-      <div className="panel border rounded-2xl px-3 py-2">
-        <input className="w-full bg-transparent outline-none text-sm" placeholder="搜索" />
-      </div>
-      <div className="panel border rounded-2xl p-4">
-        <div className="font-medium">订阅</div>
-        <div className="text-sm text-neutral-500 mt-1">解锁更多功能与权益</div>
-        <a href="/subscribe" className="btn-primary mt-3 inline-block px-3 py-1 rounded-full text-sm">立即订阅</a>
-      </div>
-      <div className="panel border rounded-2xl p-4">
-        <div className="text-[16px] font-semibold">{section1Title}</div>
-        <div className="mt-2 flex flex-col gap-2">
-          {section1Data.map((n:any)=> (
-            <div key={n.id} className="text-sm">
-              <div className="font-medium">{n.title}</div>
-              <div className="text-xs text-neutral-500">{n.summary}</div>
-            </div>
-          ))}
+
+      <div className="bg-white border border-gray-200 rounded-xl p-4">
+        <div className="text-[14px] font-semibold mb-3 flex items-center justify-between">
+          <span>订阅会员</span>
+          <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-[10px] font-bold rounded-full">
+            HOT
+          </span>
         </div>
-      </div>
-      <div className="panel border rounded-2xl p-4">
-        <div className="text-[16px] font-semibold">{section2Title}</div>
-        <div className="mt-2 flex flex-col gap-2">
-          {section2Data.map((t:any)=> (
-            <div key={t.id} className="text-sm">
-              <div className="font-medium">{t.title}</div>
-              <div className="text-xs text-neutral-500">{t.summary}</div>
-            </div>
-          ))}
+        <div className="text-[13px] text-gray-600 mb-3 space-y-1">
+          <div className="flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>无限发布动态</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>高级搜索功能</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>优先推荐展示</span>
+          </div>
         </div>
+        <a
+          href="/subscribe"
+          className="block text-center bg-blue-600 text-white py-2.5 rounded-lg text-[13px] font-medium hover:bg-blue-700 transition"
+        >
+          立即订阅 →
+        </a>
       </div>
     </aside>
   )

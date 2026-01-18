@@ -2,12 +2,15 @@ import { api } from './lib/api'
 import FeedLayout from '../components/FeedLayout'
 import Composer from '../components/Composer'
 import FeedRow from '../components/FeedRow'
+import ProjectCard from '../components/ProjectCard'
+import ProductCard from '../components/ProductCard'
 import { Suspense } from 'react'
 
 type FeedItem = {
   id: string
   title: string
   subtitle?: string
+  summary?: string
   tags?: string[]
   type: 'post' | 'project' | 'product' | 'job'
   author?: {
@@ -16,6 +19,13 @@ type FeedItem = {
     avatar?: string
   }
   timestamp?: string
+  cover_image?: string
+  likes?: number
+  comments?: number
+  saves?: number
+  price?: string
+  rating?: number
+  reviews?: number
 }
 
 type FeedData = {
@@ -30,7 +40,7 @@ function transformFeed(data: FeedData): FeedItem[] {
   const projects = data.projects.map(p => ({
     id: p.id,
     title: p.title,
-    subtitle: p.summary,
+    summary: p.summary,
     tags: p.tags,
     type: 'project' as const,
     author: {
@@ -38,13 +48,17 @@ function transformFeed(data: FeedData): FeedItem[] {
       handle: p.author_handle || 'unknown',
       avatar: p.author_avatar
     },
-    timestamp: p.created_at
+    timestamp: p.created_at,
+    cover_image: p.cover_image,
+    likes: p.likes,
+    comments: p.comments_count,
+    saves: p.saves
   }))
 
   const products = data.products.map(p => ({
     id: p.id,
     title: p.name,
-    subtitle: p.summary,
+    summary: p.summary,
     tags: p.tags,
     type: 'product' as const,
     author: {
@@ -52,13 +66,19 @@ function transformFeed(data: FeedData): FeedItem[] {
       handle: p.author_handle || 'unknown',
       avatar: p.author_avatar
     },
-    timestamp: p.created_at
+    timestamp: p.created_at,
+    cover_image: p.cover_image,
+    likes: p.likes,
+    price: p.price,
+    rating: p.rating,
+    reviews: p.reviews_count
   }))
 
   const posts = data.posts.map(p => ({
     id: p.id,
     title: p.content?.substring(0, 100) || '',
     subtitle: '',
+    summary: '',
     tags: p.hashtags,
     type: 'post' as const,
     author: {
@@ -66,7 +86,9 @@ function transformFeed(data: FeedData): FeedItem[] {
       handle: p.author_handle || 'unknown',
       avatar: p.author_avatar
     },
-    timestamp: p.created_at
+    timestamp: p.created_at,
+    likes: p.likes,
+    comments: p.comments_count
   }))
 
   const jobs = data.jobs.map(j => ({
@@ -101,9 +123,10 @@ function filterFeed(feed: FeedItem[], query: string, type: string): FeedItem[] {
     const q = query.toLowerCase()
     const titleMatch = item.title?.toLowerCase().includes(q)
     const subtitleMatch = item.subtitle?.toLowerCase().includes(q)
+    const summaryMatch = item.summary?.toLowerCase().includes(q)
     const tagsMatch = item.tags?.some(tag => tag.toLowerCase().includes(q))
 
-    return titleMatch || subtitleMatch || tagsMatch
+    return titleMatch || subtitleMatch || summaryMatch || tagsMatch
   })
 }
 
@@ -129,13 +152,13 @@ function LoadingState() {
 
 function ErrorState({ error }: { error: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="text-6xl mb-4">😕</div>
-      <h3 className="text-xl font-semibold mb-2">加载失败</h3>
-      <p className="text-neutral-500 mb-4">{error}</p>
+      <h3 className="text-xl font-bold mb-2">加载失败</h3>
+      <p className="text-gray-500 mb-4">{error}</p>
       <button
         onClick={() => window.location.reload()}
-        className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
+        className="px-6 py-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition font-medium"
       >
         重试
       </button>
@@ -146,13 +169,35 @@ function ErrorState({ error }: { error: string }) {
 function EmptyState({ query, type }: { query?: string, type?: string }) {
   let message = '暂无内容'
   if (query) message = `没有找到与 "${query}" 相关的内容`
-  else if (type && type !== 'all') message = `暂无${type}内容`
+  else if (type && type !== 'all') {
+    const typeMap: Record<string, string> = {
+      'project': '项目',
+      'product': '产品',
+      'job': '职位',
+      'post': '帖子'
+    }
+    message = `暂无${typeMap[type] || ''}内容`
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-      <div className="text-6xl mb-4">🔍</div>
-      <h3 className="text-xl font-semibold mb-2">{message}</h3>
-      <p className="text-neutral-500">试试其他关键词或筛选条件</p>
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <div className="text-7xl mb-4">🔍</div>
+      <h3 className="text-xl font-bold mb-2">{message}</h3>
+      <p className="text-gray-500 mb-6">试试其他关键词或筛选条件</p>
+      <div className="flex gap-2">
+        <button
+          onClick={() => window.location.href = '/projects'}
+          className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-200 transition"
+        >
+          浏览项目
+        </button>
+        <button
+          onClick={() => window.location.href = '/jobs'}
+          className="px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium hover:bg-purple-200 transition"
+        >
+          浏览职位
+        </button>
+      </div>
     </div>
   )
 }
@@ -170,19 +215,60 @@ async function FeedContent({ searchParams }: { searchParams?: { q?: string, type
     }
 
     return (
-      <div className="divide-y divide-[color:var(--border)]">
-        {filtered.map(item => (
-          <FeedRow
-            key={item.id}
-            id={item.id}
-            title={item.title}
-            subtitle={item.subtitle}
-            tags={item.tags}
-            type={item.type}
-            author={item.author}
-            timestamp={item.timestamp}
-          />
-        ))}
+      <div className="divide-y divide-gray-200">
+        {filtered.map(item => {
+          if (item.type === 'project') {
+            return (
+              <div key={item.id} className="p-4">
+                <ProjectCard
+                  id={item.id}
+                  title={item.title}
+                  summary={item.summary || ''}
+                  author={item.author!}
+                  tags={item.tags || []}
+                  createdAt={item.timestamp}
+                  likes={item.likes}
+                  comments={item.comments}
+                  saves={item.saves}
+                  coverImage={item.cover_image}
+                />
+              </div>
+            )
+          } else if (item.type === 'product') {
+            return (
+              <div key={item.id} className="p-4">
+                <ProductCard
+                  id={item.id}
+                  name={item.title}
+                  summary={item.summary || ''}
+                  tags={item.tags || []}
+                  author={item.author!}
+                  createdAt={item.timestamp}
+                  likes={item.likes}
+                  coverImage={item.cover_image}
+                  price={item.price}
+                  rating={item.rating}
+                  reviews={item.reviews}
+                />
+              </div>
+            )
+          } else {
+            return (
+              <FeedRow
+                key={item.id}
+                id={item.id}
+                title={item.title}
+                subtitle={item.subtitle}
+                tags={item.tags}
+                type={item.type}
+                author={item.author}
+                timestamp={item.timestamp}
+                likes={item.likes}
+                comments={item.comments}
+              />
+            )
+          }
+        })}
       </div>
     )
   } catch (error) {
